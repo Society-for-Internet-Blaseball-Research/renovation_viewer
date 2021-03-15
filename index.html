@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Renovation viewer</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+  <style type="text/css">
+    .team_div {
+      background-color: white;
+      padding: 10px;
+      border-radius: 5px;
+      height: 100%;
+    }
+    .team_container {
+      padding: 10px;
+    }
+    .reno_explain_div {
+      border: 1px solid black;
+      border-radius: 5px;
+      margin: 5px;
+      background-color: white;
+      padding: 5px;
+      height: 100%;
+      font-size: 10pt;
+    }
+    .reno_container {
+      padding: 5px;
+    }
+    .discard_table {
+      margin-top: 10px;
+    }
+    .btn {
+      margin-right: 5px;
+    }
+    body {
+      background-color: lightblue;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <br>
+    <h2>Known Renovations</h2>
+    <div class="row" id=renos></div>
+    <br>
+    <h2>Available Renovations</h2>
+    <div class="row" id=stadiums></div>
+  </div>
+  <script type="text/javascript">
+    if((new URL(window.location)).searchParams.get("test")){
+      url = "stadiums.json";
+      randomize = true;
+    } else {
+      url = "https://api.sibr.dev/chronicler/v1/stadiums";
+      randomize = false;
+    }
+    stats = {
+      "mysticism": "Special Ability ⬆️",
+      "viscosity": "Hard Hit ⬇️, Contact ⬆️",
+      "elongation": "Steal Success ⬇️, Double Play ⬇️",
+      "filthiness": "???",
+      "obtuseness": "Hit ⬆️, Foul ⬇️",
+      "forwardness": "Strike ⬆️, Hard Hit ⬆️",
+      "grandiosity": "Home Run ⬇️, Hit ⬆️",
+      "ominousness": "Hard Hit ⬇️, Groundout ⬆️",
+      "fortification": "Weather Event ⬇️, Home Run ⬇️",
+      "inconvenience": "Steal Attempt ⬇️, Hit ⬇️"
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function getTeams() {
+      return $.getJSON( "https://api.sibr.dev/chronicler/v1/teams", function( team_data ) {
+        teams = {};
+        $.each(team_data.data, function(idx, team) {
+          teams[team.id] = team.data.fullName;
+        });
+        return teams;
+      });
+    }
+
+    function populateRenos(reno_ids) {
+      return $.getJSON( "https://api.sibr.dev/proxy/database/renovations", {'ids': reno_ids.join(",")}, function( reno_data ) {
+        reno_data.sort(function(first, second) { return first.title.localeCompare(second.title); });
+        $.each(reno_data, function(idx, reno) {
+          $("." + reno.id).text(reno.title);
+          $("." + reno.id).attr("title", reno.description);
+          reno_container = $("<div class='reno_container col-sm-6 col-md-4 col-lg-3' id='" + reno.id + "'></div>");
+          reno_div = $("<div class='reno_explain_div'></div>");
+          reno_div.html("<b>" + reno.title + "</b>: " + reno.description + "(" + reno.effects.join(", ") + ")");
+          reno_container.append(reno_div);
+          $("#renos").append(reno_container);
+        });
+      });
+    }
+
+    function populateStadiums() {
+      $.getJSON(url, function( stadium_data ) {
+        reno_ids = []
+
+        /* Sort stadiums by team name */
+        stadium_data.data.sort(function(first, second) {
+          return teams[first.data.teamId].localeCompare(teams[second.data.teamId]);
+        });
+
+        /* Build each stadium info box */
+        $.each(stadium_data.data, function(idx, stadium) {
+          team_container = $("<div class='team_container col-sm-10 col-md-6 col-lg-4 col-xl-3'></div>");
+          team_div = $("<div class='team_div' id='" + stadium.id + "'></div>");
+          team_div.append("<h3 class='teamname'>" + teams[stadium.data.teamId] + "</h3>")
+          team_div.append("<h5 class='stadiumname'>( " + stadium.data.nickname + " )</h4>")
+
+          shuffleArray(stadium.data.renoHand);
+          /* Build the table of current renovations */
+          reno_table = $("<table class='reno_table table table-sm'></table>");
+          $.each(stadium.data.renoHand, function(idx, reno) {
+            reno_row = $("<tr class='reno_div'></tr>")
+            reno_elem = $("<td data-toggle='tooltip'></td>")
+            reno_elem.addClass(reno)
+            reno_row.append(reno_elem);
+            reno_table.append(reno_row);
+            reno_ids.push(reno);
+          });
+          team_div.append(reno_table);
+
+          /* If relevant, build the table of discarded renovations*/
+          if(stadium.data.renoDiscard.length > 0){
+            collapse_button = $("<button class='btn btn-secondary btn-sm' type='button' data-toggle='collapse' aria-expanded='false' aria-controls='collapse'>Show Discards</button>");
+            collapse_button.attr("data-target", "#discard-" + stadium.id);
+            team_div.append(collapse_button);
+            discard_table = $("<table class='collapse discard_table table table-sm'></table>");
+            $.each(stadium.data.renoDiscard, function(idx, reno) {
+              reno_row = $("<tr class='reno_div'></tr>")
+              reno_elem = $("<td data-toggle='tooltip'></td>")
+              reno_elem.addClass(reno)
+              reno_row.append(reno_elem);
+              discard_table.append(reno_row);
+              reno_ids.push(reno);
+            });
+            discard_table.attr("id", "discard-" + stadium.id);
+            team_div.append(discard_table);
+          }
+
+          stats_button = $("<button class='btn btn-secondary btn-sm' type='button' data-toggle='collapse' aria-expanded='false' aria-controls='collapse'>Show Stats</button>");
+          stats_button.attr("data-target", "#stats-" + stadium.id);
+          team_div.append(stats_button);
+          stats_table = $("<div class='collapse stats_table'></div>");
+          for (let stat in stats) {
+            stats_div = $("<div data-toggle='tooltip'><b>" + stat + "</b>: " + stadium.data[stat].toFixed(2) + "</div>");
+            console.log(stats_div);
+            stats_div.attr("title", stats[stat]);
+            stats_table.append(stats_div);
+          };
+          stats_table.attr("id", "stats-" + stadium.id);
+          team_div.append(stats_table);
+
+          team_container.append(team_div)
+          $("#stadiums").append(team_container);
+        });
+        reno_ids = [...new Set(reno_ids)];
+        populateRenos(reno_ids).then(function () {
+          $('[data-toggle="tooltip"]').tooltip();
+        })
+      });
+    }
+    getTeams().then(populateStadiums);
+
+
+  </script>
+</body>
+</html>
