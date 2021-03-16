@@ -118,7 +118,6 @@
           team_div.append("<h3 class='teamname'>" + teams[stadium.data.teamId] + "</h3>")
           team_div.append("<h5 class='stadiumname'>( " + stadium.data.nickname + " )</h4>")
 
-          shuffleArray(stadium.data.renoHand);
           /* Build the table of current renovations */
           reno_table = $("<table class='reno_table table table-sm'></table>");
           $.each(stadium.data.renoHand, function(idx, reno) {
