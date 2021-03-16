@@ -47,6 +47,7 @@
     <br>
     <h2>Available Renovations</h2>
     <div class="row" id=stadiums></div>
+    <small>If there are any issues, please contact @DLareau on discord. </small>
   </div>
   <script type="text/javascript">
     if((new URL(window.location)).searchParams.get("test")){
@@ -132,7 +133,7 @@
 
           /* If relevant, build the table of discarded renovations*/
           if(stadium.data.renoDiscard.length > 0){
-            collapse_button = $("<button class='btn btn-secondary btn-sm' type='button' data-toggle='collapse' aria-expanded='false' aria-controls='collapse'>Show Discards</button>");
+            collapse_button = $("<button class='btn btn-secondary btn-sm' type='button' data-toggle='collapse' aria-expanded='false' aria-controls='collapse'>Discarded Renos</button>");
             collapse_button.attr("data-target", "#discard-" + stadium.id);
             team_div.append(collapse_button);
             discard_table = $("<table class='collapse discard_table table table-sm'></table>");
@@ -148,7 +149,7 @@
             team_div.append(discard_table);
           }
 
-          stats_button = $("<button class='btn btn-secondary btn-sm' type='button' data-toggle='collapse' aria-expanded='false' aria-controls='collapse'>Show Stats</button>");
+          stats_button = $("<button class='btn btn-secondary btn-sm' type='button' data-toggle='collapse' aria-expanded='false' aria-controls='collapse'>Ballpark Stats</button>");
           stats_button.attr("data-target", "#stats-" + stadium.id);
           team_div.append(stats_button);
           stats_table = $("<div class='collapse stats_table'></div>");
